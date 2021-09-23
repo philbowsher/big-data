@@ -3,6 +3,8 @@ title: "datatable_demo"
 author: "Jeremy Allen"
 date: "9/23/2021"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 
@@ -34,6 +36,139 @@ us <- fread(
 stay_at_home_table <- fread("https://raw.githubusercontent.com/jeremy-allen/covid-deaths/main/home_dates.csv")
 
 ```
+
+
+```{r}
+
+# we haven't loaded tidyverse yet, so let's do now
+library(tidyverse)
+
+# reminder
+states
+
+# for convenience let's have a dt and df for comparing
+dt <- states
+df <- as_tibble(states)
+
+
+# in data.table what is dt[i,j,by]?
+
+# i (think filtering by rows)
+dt[state == "Georgia",]
+
+# j (think doing work on columns)
+dt[, max(deaths)]
+
+# by (think grouping your work by categories of a variable)
+dt[, .(max_deaths = max(deaths)), by = state]
+
+
+
+# tidyverse equivalents
+
+# i = filter
+df %>% 
+  filter(state == "Georgia")
+
+# j = 
+df %>% 
+  pull(deaths) %>% 
+  max()
+
+# by = group_by and summarise
+df %>% 
+  group_by(state) %>% 
+  max(deaths) # will error
+
+df %>% 
+  group_by(state) %>% 
+  summarise(deaths = max(deaths))
+
+
+
+
+#--- TOTAL DEATHS BY STATE ----
+
+# tidyverse way
+
+df %>% 
+  group_by(state) %>% 
+  arrange(state, date) %>% 
+  summarise(deaths_total = last(deaths)) %>% 
+  ungroup() %>% 
+  arrange(desc(deaths_total))
+
+
+# data.table way
+
+setkey(dt, state, date) # makes an ordered index of values
+
+dt[, .(deaths_total = data.table::last(deaths)), by = state][order(-deaths_total)]
+
+
+# let's time them
+
+tictoc::tic("tidyverse way")
+df %>% 
+  group_by(state) %>% 
+  arrange(state, date) %>% 
+  summarise(deaths_total = last(deaths)) %>% 
+  ungroup() %>% 
+  arrange(desc(deaths_total))
+tictoc::toc()
+
+tictoc::tic("data.table way")
+setkey(dt, state, date)
+dt[, .(deaths_total = data.table::last(deaths)), by = state][order(-deaths_total)]
+tictoc::toc()
+
+
+# if you read it in as a df and need to convert to data.table is it still faster?
+
+tictoc::tic("data.table way")
+dt <- as.data.table(df)
+setkey(dt, state, date)
+dt[, .(deaths_total = data.table::last(deaths)), by = state][order(-deaths_total)]
+tictoc::toc()
+
+
+# what if I like pipes, can data.table do that?
+
+# data.table can chain operations
+
+dt[, .(deaths_total = data.table::last(deaths)), by = state][order(-deaths_total)][deaths_total <= 100,]
+
+# or you can put each on new line so long as the clsoing and opening brackets are together
+
+dt[
+  , .(deaths_total = data.table::last(deaths)), by = state
+  ][
+    order(-deaths_total)
+  ][
+    deaths_total <= 100,
+  ]
+
+# or you can use the pipe with .
+
+dt[, .(deaths_total = data.table::last(deaths)), by = state] %>% 
+  .[order(-deaths_total)] %>% 
+  .[deaths_total <= 100]
+
+
+
+#--- adding new columns in place ----
+
+
+# data.table way
+dt[, state_death_total := data.table::last(deaths), by = state]
+
+# tidyverse way
+df %>% 
+  group_by(state) %>% 
+  mutate(state_death_total = last(deaths))
+
+```
+
 
 
 ```{r states, include=FALSE}
