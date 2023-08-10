@@ -1,8 +1,8 @@
 default:
   driver: "postgresql"
-  host: "big-data-demo.cloiraotshw4.us-east-1.rds.amazonaws.com"
-  user: "postgres"
-  pwd: "bigdatademo"
+  host: "localhost"
+  user: "rstudio_dev"
+  pwd: "dev_user"
   port: 5432
-  database: "retail"
+  database: "postgres"
   bigint: "integer"
