@@ -23,9 +23,11 @@ con <- connection_open(
   user = get("user"),
   password = get("pwd"),
   port = get("port"),
-  dbname = "retail",
+  dbname = get("database"),
   bigint = "integer"
 )
+
+RPostgres::dbExecute(con, "SET search_path=retail;")
 ```
     
 The RStudio Connections pane should show the tables in the database.
